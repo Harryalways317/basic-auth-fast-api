@@ -7,12 +7,25 @@ from sqlalchemy.orm import sessionmaker
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from pydantic import BaseModel
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 
 # Database setup
 DATABASE_URL = "sqlite:///./test.db"
 Base = declarative_base()
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+class CustomHeaderMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response: Response = await call_next(request)
+        response.headers['Server'] = 'SecureServer'  # Customize or remove this header
+        response.headers['Strict-Transport-Security'] = 'max-age=63072000; includeSubDomains'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        response.headers['Content-Security-Policy'] = "default-src 'self'"
+        return response
 
 class User(Base):
     __tablename__ = "users"
@@ -51,6 +64,7 @@ def create_access_token(*, data: dict, expires_delta=None):
     return encoded_jwt
 
 app = FastAPI()
+app.add_middleware(CustomHeaderMiddleware)
 
 # Dependency
 def get_db():
