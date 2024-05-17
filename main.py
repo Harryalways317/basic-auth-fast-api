@@ -20,11 +20,12 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 class CustomHeaderMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         response: Response = await call_next(request)
-        response.headers['Server'] = 'SecureServer'  # Customize or remove this header
+        response.headers['Server'] = 'SecureServer'
         response.headers['Strict-Transport-Security'] = 'max-age=63072000; includeSubDomains'
         response.headers['X-Frame-Options'] = 'DENY'
         response.headers['X-XSS-Protection'] = '1; mode=block'
-        response.headers['Content-Security-Policy'] = "default-src 'self'"
+        response.headers['Content-Security-Policy'] = "default-src 'self'; img-src 'self' data:; script-src 'self'; style-src 'self' 'unsafe-inline';"
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
         return response
 
 class User(Base):
